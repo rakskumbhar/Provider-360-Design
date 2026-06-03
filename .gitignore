@@ -1,5 +1,15 @@
+# dbt artifacts
 target/
 dbt_packages/
-logs/
-.user.yml
 dbt_internal_packages/
+
+# logs
+logs/
+
+.user.yml
+
+# OS files
+.DS_Store
+
+# environment
+.env
