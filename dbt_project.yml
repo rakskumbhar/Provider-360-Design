@@ -60,3 +60,87 @@ models:
 snapshots:
   provider_360:
     +target_schema: SNAPSHOTS
+
+
+
+# ============================================================
+# RUN COMMANDS (execute in order)
+# ============================================================
+# dbt seed                         -- Load CSV seed data
+# dbt run --select tag:bronze      -- Build staging views
+# dbt test --select tag:bronze     -- Test staging layer
+# dbt run --select tag:silver      -- Build silver incremental models
+# dbt test --select tag:silver     -- Test silver layer
+# dbt snapshot                     -- Capture SCD2 changes
+# dbt run --select tag:gold        -- Build gold dimensions/facts/OBT
+# dbt test --select tag:gold       -- Test gold layer
+# dbt run --select tag:audit       -- Build reject/audit tables
+# dbt test --select tag:audit      -- Test audit layer
+# dbt docs generate                -- Generate documentation + lineage
+#
+# QUICK RUN (all at once):
+# dbt seed && dbt build && dbt docs generate
+# ============================================================
+
+
+
+#       -- ============================================================
+#      -- DATA FLOW VERIFICATION QUERIES (run in order)
+#      -- ============================================================
+#      
+#      -- ▶ LAYER 1: SEEDS (CSV data loaded by dbt seed)
+#      -- ============================================================
+#      SELECT * FROM SNOWFLAKE_LEARNING_DB.SEEDS.NPI_RAW;
+#      SELECT * FROM SNOWFLAKE_LEARNING_DB.SEEDS.PROVIDER_CREDENTIALS_RAW;
+#      SELECT * FROM SNOWFLAKE_LEARNING_DB.SEEDS.PROVIDER_MASTER_RAW;
+#      SELECT * FROM SNOWFLAKE_LEARNING_DB.SEEDS.CLAIMS_RAW;
+#      SELECT * FROM SNOWFLAKE_LEARNING_DB.SEEDS.NETWORK_AFFILIATIONS_RAW;
+#      
+#      -- ▶ LAYER 2: RAW INGESTION (source tables - ingested via Snowpipe/COPY)
+#      -- ============================================================
+#      SELECT * FROM SNOWFLAKE_LEARNING_DB.RAW_INGESTION.NPI_RAW;
+#      SELECT * FROM SNOWFLAKE_LEARNING_DB.RAW_INGESTION.PROVIDER_CREDENTIALS_RAW;
+#      SELECT * FROM SNOWFLAKE_LEARNING_DB.RAW_INGESTION.PROVIDER_MASTER_RAW;
+#      SELECT * FROM SNOWFLAKE_LEARNING_DB.RAW_INGESTION.CLAIMS_RAW;
+#      SELECT * FROM SNOWFLAKE_LEARNING_DB.RAW_INGESTION.NETWORK_AFFILIATIONS_RAW;
+#      
+#      -- ▶ LAYER 3: BRONZE / RAW (staging views - rename + cast)
+#      -- ============================================================
+#      SELECT * FROM SNOWFLAKE_LEARNING_DB.RAW.STG_NPI__REGISTRY;
+#      SELECT * FROM SNOWFLAKE_LEARNING_DB.RAW.STG_CRED__PROVIDERS;
+#      SELECT * FROM SNOWFLAKE_LEARNING_DB.RAW.STG_EMR__PROVIDERS;
+#      SELECT * FROM SNOWFLAKE_LEARNING_DB.RAW.STG_CLAIMS__PROVIDERS;
+#      SELECT * FROM SNOWFLAKE_LEARNING_DB.RAW.STG_NETWORK__AFFILIATIONS;
+#      
+#      -- ▶ LAYER 4: SILVER (unified, deduped, enriched)
+#      -- ============================================================
+#      SELECT * FROM SNOWFLAKE_LEARNING_DB.SILVER.INT_PROVIDERS__UNIFIED;
+#      SELECT * FROM SNOWFLAKE_LEARNING_DB.SILVER.INT_PROVIDERS__DEDUPED;
+#      SELECT * FROM SNOWFLAKE_LEARNING_DB.SILVER.INT_PROVIDER_NETWORK__AFFILIATIONS;
+#      
+#      -- ▶ LAYER 5: SNAPSHOTS (SCD Type 2 change tracking)
+#      -- ============================================================
+#      SELECT * FROM SNOWFLAKE_LEARNING_DB.SNAPSHOTS.SNP_PROVIDER_ATTRIBUTES;
+#      
+#      -- ▶ LAYER 6: GOLD (dimensions, facts, OBT, consumer views)
+#      -- ============================================================
+#      SELECT * FROM SNOWFLAKE_LEARNING_DB.GOLD.DIM_PROVIDER;
+#      SELECT * FROM SNOWFLAKE_LEARNING_DB.GOLD.DIM_PROVIDER_NETWORK;
+#      SELECT * FROM SNOWFLAKE_LEARNING_DB.GOLD.FCT_PROVIDER_VISITS;
+#      SELECT * FROM SNOWFLAKE_LEARNING_DB.GOLD.PROVIDER_360_SUMMARY;
+#      SELECT * FROM SNOWFLAKE_LEARNING_DB.GOLD.VW_DIM_PROVIDER_CURRENT;
+#      SELECT * FROM SNOWFLAKE_LEARNING_DB.GOLD.VW_FCT_PROVIDER_VISITS;
+#      
+#      -- ▶ LAYER 7: AUDIT (run metadata + source row counts)
+#      -- ============================================================
+#      SELECT * FROM SNOWFLAKE_LEARNING_DB.AUDIT.AUDIT__RUN_METADATA;
+#      SELECT * FROM SNOWFLAKE_LEARNING_DB.AUDIT.AUDIT__SOURCE_ROW_COUNTS;
+#      SELECT * FROM SNOWFLAKE_LEARNING_DB.AUDIT.AUDIT__REJECT_SUMMARY;
+#      
+#      -- ▶ LAYER 8: REJECT (rejected rows with reasons)
+#      -- ============================================================
+#      SELECT * FROM SNOWFLAKE_LEARNING_DB.REJECT.REJECT_STG_NPI__REGISTRY;
+#      SELECT * FROM SNOWFLAKE_LEARNING_DB.REJECT.REJECT_STG_CRED__PROVIDERS;
+#      SELECT * FROM SNOWFLAKE_LEARNING_DB.REJECT.REJECT_STG_EMR__PROVIDERS;
+#      SELECT * FROM SNOWFLAKE_LEARNING_DB.REJECT.REJECT_STG_CLAIMS__PROVIDERS;
+#      SELECT * FROM SNOWFLAKE_LEARNING_DB.REJECT.REJECT_STG_NETWORK__AFFILIATIONS;
